@@ -1,0 +1,13 @@
+cff-version: 1.2.0
+message: "If you use refwarden, please cite it as below."
+title: "refwarden: reference and citation integrity checks for manuscripts on open scholarly data"
+type: software
+version: 0.4.0
+date-released: 2026-11-05
+license: Apache-2.0
+repository-code: "https://github.com/refwarden/refwarden"
+authors:
+  - family-names: "Alfirević"
+    given-names: "Nikša"
+    email: "nalf@efst.hr"
+    affiliation: "University of Split, Croatia"

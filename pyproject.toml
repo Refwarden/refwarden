@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "refwarden"
+version = "0.4.0"
+description = "Citation-context and reference-integrity checks for manuscripts, on open scholarly data"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "Apache-2.0"}
+authors = [{name = "Nikša Alfirević", email = "nalf@efst.hr"}]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/refwarden/refwarden"
+
+[project.optional-dependencies]
+pdf = ["pypdf>=4"]
+
+[project.scripts]
+refwarden = "refwarden.cli:main"
+
+[tool.setuptools]
+packages = ["refwarden", "refwarden.sources"]
+
+[tool.setuptools.package-data]
+refwarden = ["web/*.html", "prompts/*.md"]

@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>refwarden</title>
+<style>
+:root{--bg:#f7f7f5;--panel:#fff;--ink:#1d1f21;--muted:#6b6f76;--line:#e2e2de;--accent:#2f5d8a;
+--sup:#2e7d4f;--con:#b3402e;--men:#8a8f98;--warn:#a86b00;--chip:#eef1f5;--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#15171a;--panel:#1d2024;--ink:#e6e6e3;--muted:#9aa0a8;
+--line:#2d3136;--accent:#7fb0e0;--sup:#5cbf85;--con:#e57a66;--men:#7d838c;--warn:#e0a53a;--chip:#262a30}}
+:root[data-theme=dark]{--bg:#15171a;--panel:#1d2024;--ink:#e6e6e3;--muted:#9aa0a8;--line:#2d3136;--accent:#7fb0e0;
+--sup:#5cbf85;--con:#e57a66;--men:#7d838c;--warn:#e0a53a;--chip:#262a30}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+header{display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel);flex-wrap:wrap}
+header h1{font-size:18px;margin:0}header .tag{color:var(--muted);font-size:13px}
+nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+nav button,.btn{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:6px 12px;border-radius:6px;cursor:pointer;font:inherit}
+nav button.on,.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+main{max-width:1180px;margin:0 auto;padding:16px}
+section.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+label{display:block;font-size:13px;color:var(--muted);margin:8px 0 4px}
+input[type=text],input[type=number],textarea,select{width:100%;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);font:inherit}
+textarea{min-height:180px;font-family:var(--mono);font-size:13px}
+.row{display:flex;gap:12px;flex-wrap:wrap;align-items:end}.row>*{flex:1 1 160px}
+.muted{color:var(--muted)}.small{font-size:13px}.mono{font-family:var(--mono);font-size:12px}
+.log{font-family:var(--mono);font-size:12px;max-height:180px;overflow:auto;background:var(--bg);padding:8px;border-radius:6px;white-space:pre-wrap}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:12px 0}
+.stat{border:1px solid var(--line);border-radius:6px;padding:8px}.stat b{display:block;font-size:22px}
+.tablewrap{overflow-x:auto}table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}th{color:var(--muted);font-weight:600}
+.chip{display:inline-block;padding:1px 8px;border-radius:10px;background:var(--chip);font-size:12px;white-space:nowrap}
+.sev-Fatal,.sev-Major{color:var(--con);font-weight:600}.sev-Moderate{color:var(--warn);font-weight:600}.sev-Minor{color:var(--muted)}
+.st-verified{color:var(--sup)}.st-mismatch,.st-probable,.st-doi_elsewhere{color:var(--warn)}.st-not_found,.st-doi_unknown,.st-doi_mismatch,.st-error{color:var(--con)}
+.bar{display:flex;height:8px;border-radius:4px;overflow:hidden;min-width:90px;background:var(--chip)}
+.bar i{display:block}.s{background:var(--sup)}.c{background:var(--con)}.m{background:var(--men)}
+.stmt{border-left:3px solid var(--men);padding:4px 10px;margin:6px 0}.stmt.supporting{border-color:var(--sup)}.stmt.contrasting{border-color:var(--con)}
+.tabs2{display:flex;gap:4px;flex-wrap:wrap;margin:8px 0}.hidden{display:none}
+.banner{border-left:3px solid var(--warn);padding:6px 10px;background:var(--bg);font-size:13px}
+details summary{cursor:pointer;color:var(--accent)}
+td select{min-width:120px}
+.actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}.actions .btn{font-size:13px;text-decoration:none}
+</style>
+</head>
+<body>
+<header>
+  <h1>refwarden</h1><span class="tag">every citation gets a paper trail</span>
+  <span id="model" class="chip">…</span>
+  <nav id="nav">
+    <button data-v="audit" class="on">Manuscript</button><button data-v="paper">Paper</button>
+    <button data-v="counter">Counter-evidence</button><button data-v="runs">Runs</button>
+    <button id="theme" title="Toggle theme">◐</button>
+  </nav>
+</header>
+<main>
+<section class="card view" id="v-audit">
+  <div class="row"><div><label>Title</label><input id="a-title" type="text" placeholder="Draft v7"></div>
+    <div><label>Manuscript file (.docx .md .txt .pdf)</label><input id="a-file" type="file" accept=".docx,.md,.txt,.pdf,.tex"></div></div>
+  <label>…or paste the full text, including the reference list</label>
+  <textarea id="a-text" placeholder="Body text …&#10;&#10;References&#10;Smith, J. (2020). …"></textarea>
+  <details><summary>BibTeX reference list (optional)</summary><textarea id="a-bib"></textarea></details>
+  <div class="row"><div><label>Citing papers sampled per reference</label><input id="a-ctx" type="number" value="100" min="0" max="1000"></div>
+    <div><label><input id="a-deep" type="checkbox"> Deep: open-access full-text statements + second-order retractions</label></div>
+    <div><button class="btn primary" id="a-go">Audit references</button>
+      <button class="btn" id="a-x" title="Figures, tables, sections, appendices, equations — offline, seconds">Cross-references only</button></div></div>
+</section>
+<section class="card view hidden" id="v-paper">
+  <div class="row"><div><label>DOI</label><input id="p-doi" type="text" placeholder="10.1038/…"></div>
+    <div><label>Citing papers to sample</label><input id="p-ctx" type="number" value="200"></div>
+    <div><label><input id="p-deep" type="checkbox"> Deep (Europe PMC full text)</label></div>
+    <div><button class="btn primary" id="p-go">Show citation report</button></div></div>
+</section>
+<section class="card view hidden" id="v-counter">
+  <label>Claim to test</label><input id="x-claim" type="text" placeholder="Remote work increases productivity">
+  <div class="row"><div><label>Candidates per source</label><input id="x-n" type="number" value="15"></div>
+    <div><button class="btn primary" id="x-go">Search for disconfirming evidence</button></div></div>
+</section>
+<section class="card view hidden" id="v-runs"><div id="runs"></div></section>
+<section class="card hidden" id="job"><b>Working…</b><div class="log" id="joblog"></div></section>
+<div id="result"></div>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let TOKEN=null;try{TOKEN=localStorage.getItem('refwarden-token')}catch(e){}
+async function api(path,opt={}){
+  opt.headers=Object.assign({'Content-Type':'application/json'},opt.headers||{});
+  if(TOKEN)opt.headers.Authorization='Bearer '+TOKEN;
+  const r=await fetch(path,opt);
+  if(r.status===401){TOKEN=prompt('Access token for this refwarden server');try{localStorage.setItem('refwarden-token',TOKEN)}catch(e){}return api(path,opt)}
+  const ct=r.headers.get('content-type')||'';return ct.includes('json')?r.json():r.text();
+}
+function show(v){document.querySelectorAll('.view').forEach(e=>e.classList.add('hidden'));$('#v-'+v).classList.remove('hidden');
+  document.querySelectorAll('#nav button[data-v]').forEach(b=>b.classList.toggle('on',b.dataset.v===v));if(v==='runs')loadRuns()}
+document.querySelectorAll('#nav button[data-v]').forEach(b=>b.onclick=()=>show(b.dataset.v));
+$('#theme').onclick=()=>{const r=document.documentElement;r.dataset.theme=r.dataset.theme==='dark'?'light':'dark'};
+api('/api/config').then(c=>{$('#model').textContent='model: '+(c.model||'none — heuristics + packets')+(c.config.openalex_key?' · OpenAlex':'')});
+
+async function runJob(path,body){
+  $('#result').innerHTML='';$('#job').classList.remove('hidden');$('#joblog').textContent='';
+  const {job,error}=await api(path,{method:'POST',body:JSON.stringify(body)});
+  if(error){$('#joblog').textContent=error;return}
+  for(;;){await new Promise(r=>setTimeout(r,1200));const j=await api('/api/jobs/'+job);
+    $('#joblog').textContent=(j.log||[]).join('\n');$('#joblog').scrollTop=1e9;
+    if(j.status==='done'){$('#job').classList.add('hidden');return openRun(j.run_id)}
+    if(j.status==='error'){$('#joblog').textContent+='\nERROR: '+j.error;return}}
+}
+async function manuscriptBody(){const f=$('#a-file').files[0];const body={title:$('#a-title').value,text:$('#a-text').value,
+  bib:$('#a-bib').value,contexts:+$('#a-ctx').value,deep:$('#a-deep').checked};
+  if(f){const b=new Uint8Array(await f.arrayBuffer());let s='';for(let i=0;i<b.length;i+=32768)s+=String.fromCharCode.apply(null,b.subarray(i,i+32768));
+    body.file_b64=btoa(s);body.filename=f.name}
+  return body}
+$('#a-go').onclick=async()=>runJob('/api/audit',await manuscriptBody());
+$('#a-x').onclick=async()=>runJob('/api/xrefs',await manuscriptBody());
+function inventoryHTML(x){if(!x||!Object.keys(x.inventory).length)return '<p class="muted">No figures, tables, sections, appendices or equations referenced.</p>';
+  return `<div class="tablewrap"><table><tr><th>Object</th><th>Defined in the document</th><th>Mentioned in the text</th></tr>${Object.entries(x.inventory).map(([k,v])=>
+  `<tr><td>${esc(k)}</td><td>${esc(v.defined.join(', ')||'—')}</td><td>${esc(v.mentioned.join(', ')||'—')}</td></tr>`).join('')}</table></div>
+  ${x.notes.map(n=>`<p class="small muted">${esc(n)}</p>`).join('')}`}
+function findingsHTML(run){return `<div class="tablewrap"><table><tr><th>ID</th><th>Location</th><th>Defect</th><th>Evidence</th><th>Severity</th><th>Confidence</th><th>Minimum repair</th><th>Status</th></tr>
+     ${run.findings.map(f=>`<tr><td class="mono">${esc(f.id)}</td><td class="small">${esc(f.location)}</td><td>${esc(f.defect)}<div class="small muted">${esc(f.consequence)}</div></td><td class="small">${esc(f.evidence)}</td>
+     <td class="sev-${esc(f.severity)}">${esc(f.severity)}</td><td>${esc(f.confidence)}<div class="small muted">${esc(f.method)}</div></td><td class="small">${esc(f.min_repair)}</td>
+     <td><select data-fid="${esc(f.id)}">${['Open','Accepted','Disputed','Deferred','Evidence-required'].map(o=>`<option ${o===f.status?'selected':''}>${o}</option>`).join('')}</select></td></tr>`).join('')}</table></div>`}
+function bindStatus(run){document.querySelectorAll('[data-fid]').forEach(sel=>sel.onchange=()=>api(`/api/runs/${run.run_id}/findings/${sel.dataset.fid}/status`,{method:'POST',body:JSON.stringify({status:sel.value})}))}
+$('#p-go').onclick=()=>runJob('/api/paper',{doi:$('#p-doi').value,contexts:+$('#p-ctx').value,deep:$('#p-deep').checked});
+$('#x-go').onclick=()=>runJob('/api/counter',{claim:$('#x-claim').value,n:+$('#x-n').value});
+
+async function loadRuns(){const rs=await api('/api/runs');
+  $('#runs').innerHTML=rs.length?`<div class="tablewrap"><table><tr><th>Run</th><th>Kind</th><th>Title</th><th>Created</th></tr>${rs.map(r=>
+  `<tr><td><a href="#" data-run="${esc(r.run_id)}" class="mono">${esc(r.run_id)}</a></td><td>${esc(r.kind)}</td><td>${esc(r.title)}${r.parent_run?' <span class="chip">recheck</span>':''}</td><td class="small">${esc(r.created_at)}</td></tr>`).join('')}</table></div>`:'<p class="muted">No runs yet.</p>';
+  document.querySelectorAll('[data-run]').forEach(a=>a.onclick=e=>{e.preventDefault();openRun(a.dataset.run)})}
+
+function bar(t){if(!t||!t.total)return '<span class="muted small">—</span>';const p=x=>100*x/t.total;
+  return `<div title="${t.supporting} supporting · ${t.contrasting} contrasting · ${t.mentioning} mentioning" class="bar"><i class="s" style="width:${p(t.supporting)}%"></i><i class="c" style="width:${p(t.contrasting)}%"></i><i class="m" style="width:${p(t.mentioning)}%"></i></div><span class="small">${t.supporting} · ${t.contrasting} · ${t.mentioning}</span>`}
+function exports(run){const f=run.kind==='audit'?['md','author','csv','json']:run.kind==='xrefs'?['md','author','csv','json']:['md','json'];
+  return `<div class="actions">${f.map(x=>`<a class="btn" href="/api/runs/${run.run_id}/export?fmt=${x}" download>${x==='md'?(run.kind==='audit'?'Ledger (md)':'Report (md)'):x==='author'?'Author letter':x}</a>`).join('')}
+  ${run.kind==='audit'?`<a class="btn" href="/api/runs/${run.run_id}/export?fmt=packet&kind=claimfit" download>Judgement packet</a><button class="btn" id="recheck">Recheck notices</button>`:''}</div>`}
+function stmt(s){return `<div class="stmt ${esc(s.stance)}">“${esc(s.context)}”<div class="small muted">${esc(s.citing_title||'?')} (${esc(s.citing_year||'n.d.')}) ${s.citing_doi?'· doi:'+esc(s.citing_doi):''} · ${esc(s.stance)} via ${esc(s.stance_method)} ${s.section?'· '+esc(s.section):''}</div></div>`}
+
+async function openRun(id){const run=await api('/api/runs/'+id);const R=$('#result');
+  const head=`<section class="card"><div class="small muted mono">${esc(run.run_id)} · ${esc(run.created_at)}</div><h2 style="margin:4px 0">${esc(run.title)}</h2>
+    <div class="banner">${esc(run.validation)}</div>${exports(run)}</section>`;
+  if(run.kind==='paper'){const w=run.work,t=run.summary.tallies;
+    R.innerHTML=head+`<section class="card"><b>${esc(w.title)}</b><div class="muted">${esc(w.venue||'')} ${esc(w.year||'')} · doi:${esc(w.doi)}</div>
+    ${(w.notices||[]).map(n=>`<p class="sev-Major">${esc(n.label)} ${esc(n.doi||'')} (${esc(n.date||'')}, ${esc(n.source)})</p>`).join('')}
+    <div class="cards"><div class="stat"><b style="color:var(--sup)">${t.supporting}</b>supporting</div><div class="stat"><b style="color:var(--con)">${t.contrasting}</b>contrasting</div>
+    <div class="stat"><b>${t.mentioning}</b>mentioning</div><div class="stat"><b>${run.summary.citing_papers}</b>citing papers sampled</div></div>
+    <div class="tabs2">${['contrasting','supporting','mentioning'].map(k=>`<button class="btn" data-f="${k}">${k}</button>`).join('')}</div><div id="stmts"></div></section>`;
+    const draw=k=>$('#stmts').innerHTML=run.statements.filter(s=>s.stance===k).map(stmt).join('')||'<p class="muted">None in the sample.</p>';
+    document.querySelectorAll('[data-f]').forEach(b=>b.onclick=()=>draw(b.dataset.f));draw(t.contrasting?'contrasting':'supporting');return}
+  if(run.kind==='counter'){R.innerHTML=head+`<section class="card"><p><b>Claim:</b> ${esc(run.claim)}</p><div class="tablewrap"><table><tr><th>Relation</th><th>Paper</th><th>Evidence</th><th>Via</th></tr>
+    ${run.candidates.map(c=>`<tr><td><span class="chip">${esc(c.relation||'—')}</span></td><td>${esc(c.title)} (${esc(c.year||'n.d.')})<div class="mono">${esc(c.doi||'')}</div></td><td>${esc(c.quote)}${c.quote&&c.quote_verified===false?' <span class="sev-Moderate">quote not verbatim</span>':''}</td><td class="small">${esc(c.method)} · ${esc(c.found_via)} · rel ${c.relevance}</td></tr>`).join('')}</table></div>
+    <p class="small muted">${esc(run.coverage.notes.join(' '))}</p></section>`;return}
+  if(run.kind==='xrefs'){R.innerHTML=head+`<section class="card"><h3>Findings</h3>${run.findings.length?findingsHTML(run):'<p>No cross-reference problems found.</p>'}
+    <h3>Inventory</h3>${inventoryHTML(run.xrefs)}</section>`;bindStatus(run);R.scrollIntoView({behavior:'smooth'});return}
+  const s=run.summary,cov=run.coverage;
+  R.innerHTML=head+`<section class="card"><div class="cards">
+    <div class="stat"><b>${s.references}</b>references</div><div class="stat"><b class="st-verified">${s.verified||0}</b>verified</div>
+    <div class="stat"><b class="st-mismatch">${(s.mismatch||0)+(s.probable||0)}</b>misstated / partial</div>
+    <div class="stat"><b class="st-not_found">${(s.not_found||0)+(s.doi_unknown||0)+(s.doi_mismatch||0)}</b>not found / wrong DOI</div>
+    <div class="stat"><b class="sev-Major">${s.retracted}</b>retracted</div>
+    <div class="stat"><b>${s.findings}</b>findings (${s.sev_Major||0} major)</div></div>
+    <div class="small muted">Sources: ${esc(cov.sources_used.join(', '))} · model: ${esc(cov.model)} · ${cov.citations_found} citing sentences (${esc(cov.citation_style)}) · ${cov.claim_pairs_judged}/${cov.claim_pairs} claim–source pairs judged
+    ${Object.entries(cov.skipped).map(([k,v])=>`<br>Skipped ${esc(k)}: ${esc(v)}`).join('')}${cov.notes.map(n=>'<br>'+esc(n)).join('')}</div>
+    <div class="tabs2">${['Findings','References','Claims','Independence','Cross-refs','Judgements'].map(k=>`<button class="btn" data-t="${k}">${k}</button>`).join('')}</div><div id="tab"></div></section>`;
+  const T={
+   Findings:()=>findingsHTML(run),
+   References:()=>`<div class="tablewrap"><table><tr><th>#</th><th>Reference</th><th>Registry</th><th>Notices</th><th>How it is cited</th><th>Access</th></tr>
+     ${run.references.map(r=>{const w=r.work||{};const t=(r.statements_summary||{}).tallies;return `<tr><td>${r.no}</td><td>${esc(r.raw)}${(r.top_contrasting||[]).length?`<details><summary>${r.top_contrasting.length} contrasting statements</summary>${r.top_contrasting.map(stmt).join('')}</details>`:''}</td>
+     <td class="st-${esc(r.status)}">${esc(r.status)}<div class="mono">${esc(w.doi||'')}</div>${(r.match&&r.match.diffs||[]).map(d=>`<div class="small">${esc(d.field)}: ${esc(d.manuscript)} → ${esc(d.record)}</div>`).join('')}</td>
+     <td>${(w.notices||[]).map(n=>`<span class="chip sev-Major">${esc(n.label)}</span>`).join(' ')||'—'}${(w.preprint_of||[]).length?'<span class="chip">published: '+esc(w.preprint_of[0])+'</span>':''}</td><td>${bar(t)}</td><td class="small">${esc(w.access||'—')}</td></tr>`}).join('')}</table></div>`,
+   Claims:()=>run.claimfit.map(k=>`<div class="stmt ${k.verdict==='supported'?'supporting':['overstated','not_supported','contradicted'].includes(k.verdict)?'contrasting':''}">
+     <b class="mono">${esc(k.kid)}</b> → [${k.ref_no}] <span class="chip">${esc(k.verdict||'not judged')}</span> <span class="chip">${esc(k.claim_type)}</span> <span class="chip">${esc(k.access)}</span>
+     <div>${esc(k.claim)}</div>${k.quote?`<div class="small">Source: “${esc(k.quote)}” ${k.quote_verified?'✓ verbatim':'<span class="sev-Moderate">not verbatim</span>'}</div>`:''}
+     ${k.ceiling_note?`<div class="small muted">${esc(k.ceiling_note)}</div>`:''}${(k.flags||[]).map(f=>`<span class="chip">${esc(f.flag)}: ${esc(f.detail)}</span>`).join(' ')}</div>`).join('')||'<p class="muted">No claim–source pairs.</p>',
+   'Cross-refs':()=>inventoryHTML(run.xrefs),
+   Independence:()=>run.independence.map(i=>`<p><b>${esc(i.cid)}</b>: ${i.ref_nos.length} references → <b>${i.lines}</b> independent line(s) ${JSON.stringify(i.groups)}
+     ${i.edges.map(e=>`<div class="small muted">[${e.a}]–[${e.b}] ${esc(e.kind)}: ${esc(e.evidence)}</div>`).join('')}</p>`).join('')||'<p class="muted">No sentence cites two or more resolved references.</p>',
+   Judgements:()=>`<p class="small">Run the <b>judgement packet</b> in any AI chat or agent (or give it to a colleague), then paste the JSON reply here.
+     Use <i>validation</i> only for a rater independent of the one that produced the primary verdicts.</p>
+     <div class="row"><div><label>Rater</label><input id="j-rater" type="text" placeholder="e.g. gemini-2.5-pro, or your name"></div>
+     <div><label>Kind</label><select id="j-kind"><option>model</option><option>human</option></select></div>
+     <div><label>Role</label><select id="j-role"><option>primary</option><option>validation</option></select></div></div>
+     <label>Reply JSON</label><textarea id="j-reply"></textarea><button class="btn primary" id="j-go">Import</button><pre id="j-out" class="log"></pre>`};
+  const draw=k=>{$('#tab').innerHTML=T[k]();
+    bindStatus(run);
+    if(k==='Judgements')$('#j-go').onclick=async()=>{const rep=await api(`/api/runs/${run.run_id}/judgements`,{method:'POST',body:JSON.stringify({reply:$('#j-reply').value,rater:$('#j-rater').value||'unnamed',rater_kind:$('#j-kind').value,role:$('#j-role').value})});$('#j-out').textContent=JSON.stringify(rep,null,1)}};
+  document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>draw(b.dataset.t));draw('Findings');
+  R.scrollIntoView({behavior:'smooth'});
+  const rc=$('#recheck');if(rc)rc.onclick=()=>runJob(`/api/runs/${run.run_id}/recheck`,{});
+}
+</script>
+</body>
+</html>
